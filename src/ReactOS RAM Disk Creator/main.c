@@ -125,19 +125,53 @@ BOOL CALLBACK MainDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 							if(len != 0)
 							{
 								filecopy.pFrom = fBuf;
-								SHFileOperationW(&filecopy);
+								int r = SHFileOperationW(&filecopy);
+								if(r != 0)
+								{
+									MessageBoxW(hwnd, L"Failed to copy bootcd!", L"Error!", MB_OK | MB_ICONSTOP);
+									char str[MAX_PATH];
+									sprintf(str, "Error code: %i", r);
+									MessageBoxA(hwnd, str, "Error!", MB_OK | MB_ICONSTOP);
+									return 1;
+								}
 							}
 
 							if(len1 != 0)
 							{
 								filecopy.pFrom = f1Buf;
-								SHFileOperationW(&filecopy);
+								int r1 = SHFileOperationW(&filecopy);
+								if(r1 != 0)
+								{
+									MessageBoxW(hwnd, L"Failed to copy bootcd!", L"Error!", MB_OK | MB_ICONSTOP);
+									char str1[MAX_PATH];
+									sprintf(str1, "Error code: %i", r1);
+									MessageBoxA(hwnd, str1, "Error!", MB_OK | MB_ICONSTOP);
+									return 1;
+								}
 							}
 
 							filecopy.pFrom = f2Buf;
-							SHFileOperationW(&filecopy);
+							int r2 = SHFileOperationW(&filecopy);
+							if(r2 != 0)
+							{
+								MessageBoxW(hwnd, L"Failed to copy bootcd!", L"Error!", MB_OK | MB_ICONSTOP);
+								char str2[MAX_PATH];
+								sprintf(str2, "Error code: %i", r2);
+								MessageBoxA(hwnd, str2, "Error!", MB_OK | MB_ICONSTOP);
+								return 1;
+							}
+							
 							filecopy.pFrom = f3Buf;
-							SHFileOperationW(&filecopy);
+							int r3 = SHFileOperationW(&filecopy);
+							if(r3 != 0)
+							{
+								MessageBoxW(hwnd, L"Failed to copy bootcd!", L"Error!", MB_OK | MB_ICONSTOP);
+								char str3[MAX_PATH];
+								sprintf(str3, "Error code: %i", r3);
+								MessageBoxA(hwnd, str3, "Error!", MB_OK | MB_ICONSTOP);
+								return 1;
+							}
+
 							SetDlgItemText(hwnd, IDL_LABEL, "Success!");
 						break;
 
