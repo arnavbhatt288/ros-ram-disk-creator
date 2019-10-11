@@ -1,4 +1,4 @@
-# ReactOS RAM Disk Creator V1.0
+# ReactOS RAM Disk Creator V1.0.5
 A RAM disk creator for ReactOS made in C and WinAPI.
 
 You need to build it using Visual Studio & for Windows XP (and ReactOS) support, you need to install v141_xp toolset.
