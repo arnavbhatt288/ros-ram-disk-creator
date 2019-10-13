@@ -12,8 +12,8 @@ BOOL InstallBootSector(LPCWSTR lpszVolumeType, HWND hwnd);
 
 BOOL CALLBACK MainDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
- 	WCHAR LogicalDrives[MAX_PATH] = {0};
-    DWORD r = GetLogicalDriveStringsW(MAX_PATH, LogicalDrives);
+	WCHAR LogicalDrives[MAX_PATH] = {0};
+	DWORD r = GetLogicalDriveStringsW(MAX_PATH, LogicalDrives);
 	static WCHAR dBuf[MAX_PATH] = {0};
 	static WCHAR *fsBuf = NULL;
 	static WCHAR fBuf[MAX_PATH] = {0};
@@ -47,9 +47,9 @@ BOOL CALLBACK MainDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 		MessageBoxW(hwnd, L"Failed to get disk drives letter!", L"Error!", MB_OK | MB_ICONSTOP);
 		return 1;
 	}
-   
+
 	switch(Message)
-    {
+	{
   		case WM_INITDIALOG:
 			SendMessageW(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)LoadIconW(NULL, MAKEINTRESOURCEW(IDI_ICON_SMALL)));
 			SendMessageW(hwnd, WM_SETICON, ICON_BIG, (LPARAM)LoadIconW(NULL, MAKEINTRESOURCEW(IDI_APPLICATION)));
@@ -65,21 +65,21 @@ BOOL CALLBACK MainDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 			
 			}
 		return TRUE;
-      
+
 		case WM_COMMAND:
 			if(HIWORD(wParam) == CBN_SELCHANGE)
 			{
 				ItemIndex = SendMessageW(GetDlgItem(hwnd, IDL_DRIVE), CB_GETCURSEL, 0, 0);
-            	if (ItemIndex == CB_ERR)
-            	{
-                	MessageBoxW(hwnd, L"Could not get ItemIndex!", L"Error!", MB_OK | MB_ICONSTOP);
-                	return 0;
-            	}
+				if (ItemIndex == CB_ERR)
+				{
+					MessageBoxW(hwnd, L"Could not get ItemIndex!", L"Error!", MB_OK | MB_ICONSTOP);
+					return 0;
+				}
 				SendMessageW(GetDlgItem(hwnd, IDL_DRIVE), CB_GETLBTEXT, (WPARAM)ItemIndex, (LPARAM)dBuf);
 			}
-            
+
 			switch(LOWORD(wParam))
-            {                 
+			{
 				case IDB_START:
 					len = GetWindowTextLength(GetDlgItem(hwnd, IDE_BOOTCD));
 					len1 = GetWindowTextLength(GetDlgItem(hwnd, IDE_LIVECD));
@@ -177,29 +177,28 @@ BOOL CALLBACK MainDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 
 						case IDNO:
 							return 0;
-						break;
 					}
 
 				break;
-                
+
 				case IDB_EXIT:
 					memset(dBuf, 0, sizeof dBuf);
 					memset(adBuf, 0, sizeof adBuf);
 					memset(fBuf, 0, sizeof fBuf);
 					memset(LogicalDrives, 0, sizeof LogicalDrives);
 					fsBuf = NULL;
-                    EndDialog(hwnd, 0);
-                break;
-				
+					EndDialog(hwnd, 0);
+				break;
+
 				case IDR_FAT:
 					CheckDlgButton(hwnd, IDR_FAT, BST_CHECKED);
-    				fsBuf = L"fat";
+					fsBuf = L"fat";
 					CheckDlgButton(hwnd, IDR_FAT32, BST_UNCHECKED);
 				break;
-				
+
 				case IDR_FAT32:
 					CheckDlgButton(hwnd, IDR_FAT32, BST_CHECKED);
-    				fsBuf = L"fat32";
+					fsBuf = L"fat32";
 					CheckDlgButton(hwnd, IDR_FAT, BST_UNCHECKED);
 				break;
 
@@ -230,8 +229,8 @@ BOOL CALLBACK MainDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 					SetDlgItemTextW(hwnd, IDE_FREELDRS, f3Buf);
 				break;
 			}
-        break;
-    	
+		break;
+
 		case WM_CLOSE:
 			memset(dBuf, 0, sizeof dBuf);
 			memset(adBuf, 0, sizeof adBuf);
@@ -239,10 +238,10 @@ BOOL CALLBACK MainDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 			memset(LogicalDrives, 0, sizeof LogicalDrives);
 			fsBuf = NULL;
 			EndDialog(hwnd, 0);
-    	break;
-        
+		break;
+
 		default:
-            return FALSE;
+			return FALSE;
     }
     return TRUE;
 }
