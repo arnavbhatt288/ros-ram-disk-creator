@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
 #include "resource.h"
@@ -9,6 +10,10 @@
 #include "fat32.h"
 
 BOOL InstallBootSector(LPCWSTR lpszVolumeType, HWND hwnd);
+
+int FileCopy(HWND hwnd, WCHAR* f, WCHAR* f1, WCHAR* f2, WCHAR* f3, WCHAR* Debuf);
+
+void ErrorHandling(HWND hwnd, WCHAR* text);
 
 BOOL CALLBACK MainDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
@@ -26,25 +31,18 @@ BOOL CALLBACK MainDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 	int len1 = 0;
 	int len2 = 0;
 	int len3 = 0;
+	int success = 0;
 
 	OPENFILENAMEW ofn;
 	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = hwnd;
-	ofn.lpstrFilter = L"All Files (*.*)\0*.*\0";
 	ofn.nMaxFile = MAX_PATH;
 	ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST;
 
-	SHFILEOPSTRUCTW filecopy;
-	ZeroMemory(&filecopy, sizeof(filecopy));
-	filecopy.hwnd = hwnd;
-	filecopy.wFunc = FO_COPY;
-	filecopy.fFlags = FOF_NOCONFIRMATION | FOF_SIMPLEPROGRESS;
-	filecopy.lpszProgressTitle = L"Copying files...";
-
 	if(r == 0)
 	{
-		MessageBoxW(hwnd, L"Failed to get disk drives letter!", L"Error!", MB_OK | MB_ICONSTOP);
+		ErrorHandling(hwnd, L"Failed to get disk drives letter!");
 		return 1;
 	}
 
@@ -72,8 +70,8 @@ BOOL CALLBACK MainDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 				ItemIndex = SendMessageW(GetDlgItem(hwnd, IDL_DRIVE), CB_GETCURSEL, 0, 0);
 				if (ItemIndex == CB_ERR)
 				{
-					MessageBoxW(hwnd, L"Could not get ItemIndex!", L"Error!", MB_OK | MB_ICONSTOP);
-					return 0;
+					ErrorHandling(hwnd, L"Could not get ItemIndex!");
+					return 1;
 				}
 				SendMessageW(GetDlgItem(hwnd, IDL_DRIVE), CB_GETLBTEXT, (WPARAM)ItemIndex, (LPARAM)dBuf);
 			}
@@ -87,92 +85,47 @@ BOOL CALLBACK MainDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 					len3 = GetWindowTextLength(GetDlgItem(hwnd, IDE_FREELDRS));
 					if(!IsDlgButtonChecked(hwnd, IDR_FAT) && !IsDlgButtonChecked(hwnd, IDR_FAT32))
 					{
-						MessageBoxW(hwnd, L"Select the file system option!", L"Error!", MB_OK | MB_ICONSTOP);
+						ErrorHandling(hwnd, L"Select the file system option!");
 						return 0;
 					}
 					
 					else if(len == 0 && len1 == 0)
 					{
-						MessageBoxW(hwnd, L"Select either bootcd or livecd!", L"Error!", MB_OK | MB_ICONSTOP);
+						ErrorHandling(hwnd, L"Select either bootcd or livecd or both!");
 						return 0;
 					}
 
 					else if(len2 == 0)
 					{
-						MessageBoxW(hwnd, L"Select the specified file!", L"Error!", MB_OK | MB_ICONSTOP);
+						ErrorHandling(hwnd, L"Select the freeldr.ini file!");
 						return 0;
 					}
 
 					else if(len3 == 0)
 					{
-						MessageBoxW(hwnd, L"Select the specified file!", L"Error!", MB_OK | MB_ICONSTOP);
+						ErrorHandling(hwnd, L"Select the freeldr.sys file!");
 						return 0;
 					}
 
-					filecopy.pTo = dBuf;
 					wcstombs(adBuf, dBuf, MAX_PATH);
 					memmove(&adBuf[2], &adBuf[2 + 1], strlen(adBuf) - 2);
 
-					int msgboxID = MessageBox(hwnd, "Are you sure you have selected correct filesystem and files?","Warning", MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2);
+					int msgboxID = MessageBoxW(hwnd, L"Are you sure you have selected correct filesystem and files?", L"Warning", MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2);
 					switch(msgboxID)
 					{
 						case IDYES:
-							SetDlgItemText(hwnd, IDL_LABEL, "Installing Boot Sector...");
+							SetDlgItemTextW(hwnd, IDL_LABEL, L"Installing Boot Sector...");
 							OpenVolume(adBuf, hwnd);
 							InstallBootSector(fsBuf, hwnd);
 							CloseVolume();
 							
-							if(len != 0)
-							{
-								filecopy.pFrom = fBuf;
-								int r = SHFileOperationW(&filecopy);
-								if(r != 0)
-								{
-									MessageBoxW(hwnd, L"Failed to copy bootcd!", L"Error!", MB_OK | MB_ICONSTOP);
-									char str[MAX_PATH];
-									sprintf(str, "Error code: %i", r);
-									MessageBoxA(hwnd, str, "Error!", MB_OK | MB_ICONSTOP);
-									return 1;
-								}
-							}
+							FileCopy(hwnd, fBuf, f1Buf, f2Buf, f3Buf, dBuf);
 
-							if(len1 != 0)
-							{
-								filecopy.pFrom = f1Buf;
-								int r1 = SHFileOperationW(&filecopy);
-								if(r1 != 0)
-								{
-									MessageBoxW(hwnd, L"Failed to copy bootcd!", L"Error!", MB_OK | MB_ICONSTOP);
-									char str1[MAX_PATH];
-									sprintf(str1, "Error code: %i", r1);
-									MessageBoxA(hwnd, str1, "Error!", MB_OK | MB_ICONSTOP);
-									return 1;
-								}
-							}
+							if(success == 0)
+								SetDlgItemTextW(hwnd, IDL_LABEL, L"Success!");
 
-							filecopy.pFrom = f2Buf;
-							int r2 = SHFileOperationW(&filecopy);
-							if(r2 != 0)
-							{
-								MessageBoxW(hwnd, L"Failed to copy bootcd!", L"Error!", MB_OK | MB_ICONSTOP);
-								char str2[MAX_PATH];
-								sprintf(str2, "Error code: %i", r2);
-								MessageBoxA(hwnd, str2, "Error!", MB_OK | MB_ICONSTOP);
-								return 1;
-							}
-							
-							filecopy.pFrom = f3Buf;
-							int r3 = SHFileOperationW(&filecopy);
-							if(r3 != 0)
-							{
-								MessageBoxW(hwnd, L"Failed to copy bootcd!", L"Error!", MB_OK | MB_ICONSTOP);
-								char str3[MAX_PATH];
-								sprintf(str3, "Error code: %i", r3);
-								MessageBoxA(hwnd, str3, "Error!", MB_OK | MB_ICONSTOP);
-								return 1;
-							}
-
-							SetDlgItemText(hwnd, IDL_LABEL, "Success!");
+							else
+								SetDlgItemTextW(hwnd, IDL_LABEL, L"Failed!");
 						break;
 
 						case IDNO:
@@ -203,30 +156,39 @@ BOOL CALLBACK MainDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 				break;
 
 				case IDB_SELECTA:
+					ofn.lpstrFilter = L"ISO File\0*.iso\0";
 					ofn.lpstrFile = fBuf;
 					GetOpenFileNameW(&ofn);
 					SetDlgItemTextW(hwnd, IDE_BOOTCD, fBuf);
 					ofn.lpstrFile = NULL;
+					ofn.lpstrFilter = NULL;
 				break;
 
 				case IDB_SELECTB:
+					ofn.lpstrFilter = L"ISO File\0*.iso\0";
 					ofn.lpstrFile = f1Buf;
 					GetOpenFileNameW(&ofn);
 					SetDlgItemTextW(hwnd, IDE_LIVECD, f1Buf);
 					ofn.lpstrFile = NULL;
+					ofn.lpstrFilter = NULL;
 				break;
 
 				case IDB_SELECTC:
+					ofn.lpstrFilter = L"INI File\0*.ini\0";
 					ofn.lpstrFile = f2Buf;
 					GetOpenFileNameW(&ofn);
 					SetDlgItemTextW(hwnd, IDE_FREELDRI, f2Buf);
 					ofn.lpstrFile = NULL;
+					ofn.lpstrFilter = NULL;
 				break;
 
 				case IDB_SELECTD:
+					ofn.lpstrFilter = L"SYS File\0*.sys\0";
 					ofn.lpstrFile = f3Buf;
 					GetOpenFileNameW(&ofn);
 					SetDlgItemTextW(hwnd, IDE_FREELDRS, f3Buf);
+					ofn.lpstrFile = NULL;
+					ofn.lpstrFilter = NULL;
 				break;
 			}
 		break;
@@ -246,14 +208,103 @@ BOOL CALLBACK MainDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
     return TRUE;
 }
 
-int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, 
-    LPWSTR lpCmdLine, int nCmdShow)
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+	LPWSTR lpCmdLine, int nCmdShow)
 {
-    UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
-    UNREFERENCED_PARAMETER(nCmdShow);
+	UNREFERENCED_PARAMETER(hPrevInstance);
+	UNREFERENCED_PARAMETER(lpCmdLine);
+	UNREFERENCED_PARAMETER(nCmdShow);
 
-    return DialogBoxW(hInstance, MAKEINTRESOURCEW(IDD_MAIN), NULL, MainDlgProc);
+	HANDLE obj;
+
+	obj = CreateMutexW(NULL, FALSE, L"pMutex");
+
+	if (obj)
+	{
+		DWORD err = GetLastError();
+
+		if (err == ERROR_ALREADY_EXISTS)
+		{
+			MessageBoxW(NULL, L"Program is already running!", L"Error", MB_OK | MB_ICONSTOP);
+			CloseHandle(obj);
+			return 0;
+		}
+	}
+	
+	DialogBoxW(hInstance, MAKEINTRESOURCEW(IDD_MAIN), NULL, MainDlgProc);
+
+	if(obj)
+	{ 
+		CloseHandle(obj);
+	}
+
+	return 0;
+}
+
+int FileCopy(HWND hwnd, WCHAR* f, WCHAR* f1, WCHAR* f2, WCHAR* f3, WCHAR* Debuf)
+{
+	WCHAR str[MAX_PATH];
+	WCHAR str1[MAX_PATH];
+	WCHAR str2[MAX_PATH];
+	WCHAR str3[MAX_PATH];
+	int r = 0;
+	int r1 = 0;
+	int r2 = 0;
+	int r3 = 0;
+
+	SHFILEOPSTRUCTW filecopy;
+	ZeroMemory(&filecopy, sizeof(filecopy));
+	filecopy.hwnd = hwnd;
+	filecopy.wFunc = FO_COPY;
+	filecopy.fFlags = FOF_NOCONFIRMATION | FOF_SIMPLEPROGRESS;
+	filecopy.lpszProgressTitle = L"Copying files...";
+	filecopy.pTo = Debuf;
+	
+	filecopy.pFrom = f;
+	r = SHFileOperationW(&filecopy);
+	filecopy.pFrom = NULL;
+	if (r != 0)
+	{
+		ErrorHandling(hwnd, L"Failed to copy bootcd!");
+		swprintf(str, MAX_PATH , L"Error code: %i", r);
+		ErrorHandling(hwnd, str);
+		return 1;
+	}
+
+	filecopy.pFrom = f1;
+	r1 = SHFileOperationW(&filecopy);
+	filecopy.pFrom = NULL;
+	if (r1 != 0)
+	{
+		ErrorHandling(hwnd, L"Failed to copy livecd!");
+		swprintf(str1, MAX_PATH , L"Error code: %i", r1);
+		ErrorHandling(hwnd, str1);
+		return 1;
+	}
+
+	filecopy.pFrom = f2;
+	r2 = SHFileOperationW(&filecopy);
+	filecopy.pFrom = NULL;
+	if (r2 != 0)
+	{
+		ErrorHandling(hwnd, L"Failed to copy freeldr.ini!");
+		swprintf(str2, MAX_PATH, L"Error code: %i", r2);
+		ErrorHandling(hwnd, str2);
+		return 1;
+	}
+
+	filecopy.pFrom = f3;
+	r3 = SHFileOperationW(&filecopy);
+	filecopy.pFrom = NULL;
+	if (r3 != 0)
+	{
+		ErrorHandling(hwnd, L"Failed to copy freeldr.sys!");
+		swprintf(str3, MAX_PATH, L"Error code: %i", r3);
+		ErrorHandling(hwnd, str3);
+		return 1;
+	}
+
+	return 0;
 }
 
 BOOL InstallBootSector(LPCWSTR lpszVolumeType, HWND hwnd)
@@ -291,11 +342,16 @@ BOOL InstallBootSector(LPCWSTR lpszVolumeType, HWND hwnd)
     }
     else
     {
-        MessageBoxW(hwnd, L"Unknown file type.", L"Error!", MB_OK | MB_ICONSTOP);
+		ErrorHandling(hwnd, L"Unknown filesystem type!");
         return FALSE;
     }
 
-    SetDlgItemText(hwnd, IDL_LABEL, "Copying Files...");
+    SetDlgItemTextW(hwnd, IDL_LABEL, L"Copying Files...");
 
     return TRUE;
+}
+
+void ErrorHandling(HWND hwnd, WCHAR* text)
+{
+	MessageBoxW(hwnd, text, L"Error!", MB_OK | MB_ICONERROR);
 }
