@@ -1,4 +1,4 @@
-# ReactOS RAM Disk Creator V1.2
+# ReactOS RAM Disk Creator V1.2.1
 
 ## About -
 A RAM disk creator for ReactOS made in C and WinAPI.
