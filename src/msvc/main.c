@@ -288,7 +288,7 @@ BOOL CALLBACK MainDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 							SetDlgItemTextW(hwnd, IDL_LABEL, L"Installing Boot Sector...");
 							OpenVolume(adBuf, hwnd);
 							BOOL bsAllow = InstallBootSector(fsBuf, hwnd);
-							if (bsAllow = TRUE)
+							if (bsAllow == TRUE)
 							{
 								CloseVolume();
 							}
