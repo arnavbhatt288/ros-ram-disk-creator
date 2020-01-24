@@ -28,7 +28,6 @@ static HANDLE    hDiskVolume = NULL;
 BOOL OpenVolume(LPCTSTR lpszVolumeName, HWND hwnd)
 {
 	TCHAR RealVolumeName[MAX_PATH];
-	TCHAR buf[256];
 
 	//
 	// If they passed in a drive letter (e.g. "A:")
@@ -56,11 +55,7 @@ BOOL OpenVolume(LPCTSTR lpszVolumeName, HWND hwnd)
 
 	if (hDiskVolume == INVALID_HANDLE_VALUE)
 	{
-		MessageBoxA(hwnd, "Failed to open the volume!", "Error!", MB_OK | MB_ICONSTOP);
-		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			buf, (sizeof(buf) / sizeof(wchar_t)), NULL);
-		MessageBoxA(hwnd, buf, "Error!", MB_OK | MB_ICONSTOP);
+		MessageBoxA(hwnd, "OpenVolume() failed!", "Error!", MB_OK | MB_ICONSTOP);
 		return FALSE;
 	}
 
